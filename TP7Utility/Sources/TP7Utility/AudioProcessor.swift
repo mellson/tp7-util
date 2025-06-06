@@ -314,16 +314,16 @@ class AudioProcessor {
             throw ProcessingError.invalidFile
         }
         
-        // Create output format - use 16-bit for now (same as export success)
-        let outputChannels = UInt32(audioFiles.count * 2)
+        // Create output format - MUST be 12 channels and 24-bit for TP-7 compatibility
+        let outputChannels: UInt32 = 12  // Always 12 channels like Python version
         var outputFormat = AudioStreamBasicDescription()
         outputFormat.mSampleRate = sampleRate
         outputFormat.mFormatID = kAudioFormatLinearPCM
         outputFormat.mFormatFlags = kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked
-        outputFormat.mBitsPerChannel = 16
+        outputFormat.mBitsPerChannel = 24  // Must be 24-bit like original TP-7 files
         outputFormat.mChannelsPerFrame = outputChannels
         outputFormat.mFramesPerPacket = 1
-        outputFormat.mBytesPerFrame = outputChannels * 2  // 2 bytes per sample
+        outputFormat.mBytesPerFrame = outputChannels * 3  // 3 bytes per 24-bit sample
         outputFormat.mBytesPerPacket = outputFormat.mBytesPerFrame
         
         // Create output file
@@ -447,6 +447,6 @@ class AudioProcessor {
             totalFramesWritten += Int64(framesToProcess)
         }
         
-        print("Created \(outputChannels)-channel multitrack file with \(audioFiles.count) stereo track(s)")
+        print("Created 12-channel TP-7 multitrack file with \(audioFiles.count) active stereo track(s)")
     }
 }
