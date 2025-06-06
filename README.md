@@ -11,9 +11,23 @@ A native macOS application for converting between TP-7 multitrack format and ind
 - **Drag & Drop Interface**: Simple interface with automatic file type detection
 - **Finder Integration**: Automatically opens results in Finder after conversion
 
-## Usage
+## Getting Started
 
-1. Double-click `TP-7 Utility.app` to launch the application
+### Building the App
+
+If you downloaded the source code, build the app first:
+
+```bash
+./build-app.sh
+```
+
+This creates `TP-7 Utility.app` with no external dependencies.
+
+### Using the App
+
+1. Double-click `TP-7 Utility.app` to launch
+   - **First time**: Right-click → "Open" → "Open" (bypass unsigned app warning)
+   - **After that**: Normal double-click works
 2. Drag and drop files onto the window:
    - **Single multitrack file**: Automatically exports to individual stereo tracks
    - **Multiple stereo files**: Automatically imports to create TP-7 multitrack format
@@ -54,21 +68,11 @@ TP-7 Utility.app/
 └── Core Audio APIs (ExtAudioFile)
 ```
 
-## Building from Source
-
-```bash
-./build-app.sh
-```
-
-Creates `TP-7 Utility.app` with:
-- Native Swift executable
-- Custom app icon from app_icon.png
-- No external dependencies
-
 ## Requirements
 
 - macOS 13.0 or later
-- No additional software needed
+- Swift (for building from source)
+- No additional runtime dependencies
 
 ## Distribution
 
