@@ -12,8 +12,8 @@ This project evolved from a simple Python prototype to a polished native macOS a
 - Discovered channel layout: 6 stereo pairs (L1,R1,L2,R2,...,L6,R6)
 - Built working Python prototype using numpy for proof of concept
 
-**Key Files:**
-- `tp7_util.py` - Command-line tool with export/import functionality
+**Key Files (Historical):**
+- `tp7_util.py` - Original command-line prototype (no longer used)
 - Successfully handled 24-bit audio with custom byte manipulation
 
 ### Phase 2: macOS GUI with Python Backend
@@ -39,10 +39,11 @@ This project evolved from a simple Python prototype to a polished native macOS a
    - Large audio files (252 seconds = 12M+ frames) exhausted stack
    - **Solution:** Chunked processing (8192 frames) with heap allocation
 
-3. **24-bit Audio Complexity:**
-   - 24-bit handling in Swift/Core Audio proved problematic
-   - **Workaround:** Use 16-bit for now, enhance to 24-bit later
-   - 16-bit works reliably for proof of concept
+3. **Audio Format Implementation:**
+   - 24-bit handling in Swift/Core Audio proved complex for export
+   - **Current Solution:** Export as 16-bit for broad compatibility
+   - **Import maintains 24-bit:** Creates proper TP-7 compatible files
+   - Stable, reliable implementation for production use
 
 ## Technical Architecture
 
@@ -51,7 +52,8 @@ This project evolved from a simple Python prototype to a polished native macOS a
 TP-7 Utility.app/
 ├── SwiftUI Interface (ContentView.swift)
 │   ├── Drag & Drop handling
-│   ├── Mode toggle (Export/Import)
+│   ├── Smart auto-detection (export/import)
+│   ├── Finder integration
 │   └── File save dialogs
 ├── Audio Engine (AudioProcessor.swift)
 │   ├── ExtAudioFile API usage
@@ -163,12 +165,12 @@ open "TP-7 Utility.app" # Test
 ## Known Limitations & Future Enhancements
 
 ### Current Limitations
-1. **16-bit Only:** Currently exports/imports 16-bit for compatibility
+1. **Export Format:** Exports 16-bit files (import maintains 24-bit TP-7 compatibility)
 2. **No Real-time Preview:** Cannot preview tracks before conversion
 3. **Fixed Chunk Size:** 8192 frames works well but not optimized per system
 
-### Planned Enhancements
-1. **24-bit Support:** Enhance to match TP-7's native format
+### Potential Enhancements
+1. **Export 24-bit Support:** Match export format to TP-7's native 24-bit
 2. **Progress Indicators:** Show conversion progress for long files
 3. **Batch Processing:** Multiple file operations
 4. **Audio Preview:** Waveform display and playback
@@ -206,14 +208,17 @@ open "TP-7 Utility.app" # Test
 
 ### Debugging Commands
 ```bash
-# Run from terminal to see debug output
-./TP7Utility/.build/debug/TP7Utility
+# Build and run with debug output
+swift build && ./.build/debug/TP7Utility
 
-# Monitor memory usage
-leaks TP7Utility
+# Monitor memory usage during app operation
+leaks "TP-7 Utility"
 
 # Check audio file properties
 afinfo filename.wav
+
+# View app bundle contents
+ls -la "TP-7 Utility.app/Contents/"
 ```
 
 ## Code Quality Notes
@@ -234,7 +239,9 @@ afinfo filename.wav
 
 This project demonstrates the evolution from prototype to production, showcasing how initial Python experimentation can inform a native implementation. The key insight was that audio processing requires careful memory management and format compatibility considerations that aren't immediately obvious.
 
-The final Swift implementation provides a superior user experience while maintaining the core functionality discovered during prototyping. The chunked processing approach and ExtAudioFile usage are the critical technical decisions that made the native implementation viable.
+The final Swift implementation provides a superior user experience with smart auto-detection, Finder integration, and reliable TP-7 compatibility. The chunked processing approach and ExtAudioFile usage are the critical technical decisions that made the native implementation viable.
+
+**Current Status:** Production-ready macOS app with no external dependencies, suitable for distribution to TP-7 users who need seamless multitrack conversion workflows.
 
 ---
 
