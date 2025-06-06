@@ -1,6 +1,6 @@
 # TP-7 Utility
 
-A native macOS application for converting between TP-7 multitrack format and individual WAV files.
+A native macOS application for converting between Teenage Engineerings [TP-7](https://teenage.engineering/products/tp-7) multitrack format and individual WAV files.
 
 ## Features
 
