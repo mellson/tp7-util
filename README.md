@@ -13,26 +13,92 @@ A native macOS application for converting between Teenage Engineerings [TP-7](ht
 
 ## Getting Started
 
-### Building the App
+### Prerequisites
 
-If you downloaded the source code, build the app first:
+- macOS 13.0 or later
+- Xcode (for Swift compiler)
+- **For code signing**: Active Apple Developer Program membership
+
+### Setting Up Code Signing (Required)
+
+To build and sign the app, you need an Apple Developer account:
+
+1. **Get Apple Developer Program Membership**
+   - Visit https://developer.apple.com/programs/
+   - Enroll in the Apple Developer Program ($99/year)
+
+2. **Download Developer ID Application Certificate**
+   - Open **Xcode → Settings → Accounts**
+   - Add your Apple ID and select your team
+   - Click **"Manage Certificates..."**
+   - Click **"+"** and select **"Developer ID Application"**
+   - This downloads the certificate needed for app distribution
+
+3. **Create Configuration File**
+   ```bash
+   cp .env.example .env
+   ```
+   
+4. **Edit .env with Your Details**
+   ```bash
+   # Find your certificate name
+   security find-identity -v -p codesigning
+   
+   # Find your team ID at https://developer.apple.com/account
+   ```
+   
+   Update `.env` with your information:
+   ```
+   DEVELOPER_ID="Developer ID Application: Your Name (TEAM_ID)"
+   TEAM_ID="YOUR_TEAM_ID"
+   APPLE_ID="your.email@example.com"
+   NOTARIZATION_PROFILE="your-notarization-profile"
+   ```
+
+### Building the App
 
 ```bash
 ./build-app.sh
 ```
 
-This creates `TP-7 Utility.app` with no external dependencies.
+This creates a properly signed `TP-7 Utility.app` with no external dependencies.
+
+### Optional: Notarization (Recommended)
+
+For the best user experience (no security warnings):
+
+1. **Create App-Specific Password**
+   - Go to https://appleid.apple.com/account/manage
+   - Generate app-specific password for "TP7 Notarization"
+
+2. **Store Notarization Credentials**
+   ```bash
+   xcrun notarytool store-credentials "TP7-notarization" \
+       --apple-id "your.email@example.com" \
+       --team-id "YOUR_TEAM_ID" \
+       --password "your-app-specific-password"
+   ```
+
+3. **Build and Notarize**
+   ```bash
+   ./build-app.sh    # Build and sign
+   ./notarize.sh     # Submit for notarization
+   ```
+
+This creates distribution-ready `TP-7_Utility_NOTARIZED.dmg` and `.zip` files.
 
 ### Using the App
 
-1. Double-click `TP-7 Utility.app` to launch
-   - **First time**: Right-click → "Open" → "Open" (bypass unsigned app warning)
-   - **After that**: Normal double-click works
-2. Drag and drop files onto the window:
-   - **Single multitrack file**: Automatically exports to individual stereo tracks
-   - **Multiple stereo files**: Automatically imports to create TP-7 multitrack format
-3. Choose the output location when prompted
-4. Finder opens automatically to show your converted files
+1. **Launch the App**
+   - **Notarized version**: Double-click to launch immediately
+   - **Signed but not notarized**: Right-click → "Open" → "Open" (first time only)
+
+2. **Convert Files**
+   - Drag and drop files onto the window:
+     - **Single multitrack file**: Automatically exports to individual stereo tracks
+     - **Multiple stereo files**: Automatically imports to create TP-7 multitrack format
+   - Choose the output location when prompted
+   - Finder opens automatically to show your converted files
 
 ## Technical Implementation
 
@@ -76,9 +142,19 @@ TP-7 Utility.app/
 
 ## Distribution
 
-The app is currently unsigned. For first-time use:
-1. Right-click the app → "Open" 
-2. Click "Open" in the security dialog
-3. Future launches work normally with double-click
+### Code Signing Requirements
 
-For professional distribution, code signing and notarization would eliminate security warnings.
+This project requires proper code signing for distribution:
+
+- **Developer ID Application certificate** is required to build
+- **Notarization** is recommended for the best user experience
+- The build process will fail without proper Apple Developer credentials
+
+### For Contributors
+
+To contribute to this project, you need:
+1. Apple Developer Program membership
+2. Developer ID Application certificate
+3. Configured `.env` file (see setup instructions above)
+
+Without these, the build script will exit with an error to prevent unsigned builds.
