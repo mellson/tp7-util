@@ -14,6 +14,15 @@ venv/
 env/
 ENV/
 
+# Swift/Xcode
+TP7Utility/.build/
+*.xcodeproj
+*.xcworkspace
+DerivedData/
+
+# App bundles (will add manually)
+*.app
+
 # IDE
 .vscode/
 .idea/
