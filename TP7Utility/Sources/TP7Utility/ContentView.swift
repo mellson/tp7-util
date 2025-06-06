@@ -1,8 +1,8 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import AVFoundation
 
 struct ContentView: View {
-    @State private var isExportMode = true
     @State private var isDragOver = false
     @State private var isProcessing = false
     @State private var statusMessage = ""
@@ -15,19 +15,11 @@ struct ContentView: View {
                 Text("TP-7 Utility")
                     .font(.system(size: 24, weight: .bold))
                 
-                Text(isExportMode ? "Export Multitrack to Individual Files" : "Import Files to Multitrack")
+                Text("Drop audio files to convert")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
             .padding(.top, 20)
-            
-            // Mode Toggle
-            Picker("Mode", selection: $isExportMode) {
-                Text("Export").tag(true)
-                Text("Import").tag(false)
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 200)
             
             // Drop Zone
             ZStack {
@@ -40,11 +32,11 @@ struct ContentView: View {
                     )
                 
                 VStack(spacing: 12) {
-                    Image(systemName: isExportMode ? "doc.badge.arrow.up" : "doc.badge.arrow.down")
+                    Image(systemName: "doc.badge.arrow.up")
                         .font(.system(size: 48))
                         .foregroundColor(isDragOver ? .accentColor : .gray)
                     
-                    Text(dropZoneText)
+                    Text("Drop TP-7 multitrack file to export\nor stereo wav files to import")
                         .font(.headline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -87,14 +79,6 @@ struct ContentView: View {
         )
     }
     
-    private var dropZoneText: String {
-        if isExportMode {
-            return "Drop TP-7 multitrack file here\n(2-12 channel WAV)"
-        } else {
-            return "Drop stereo WAV files here\n(max 6 files)"
-        }
-    }
-    
     private func handleDrop(providers: [NSItemProvider]) {
         droppedFiles.removeAll()
         
@@ -121,20 +105,58 @@ struct ContentView: View {
     private func processFiles() {
         guard !droppedFiles.isEmpty else { return }
         
-        if isExportMode {
-            // Export mode - expect single file
-            guard droppedFiles.count == 1 else {
-                statusMessage = "Error: Export mode requires exactly one file"
-                return
-            }
-            exportMultitrack(file: droppedFiles[0])
+        // Auto-detect operation based on files
+        if droppedFiles.count == 1 {
+            // Single file - check if it's multitrack for export
+            detectAndProcess(singleFile: droppedFiles[0])
         } else {
-            // Import mode - can have multiple files
+            // Multiple files - assume import operation
             guard droppedFiles.count <= 6 else {
                 statusMessage = "Error: Maximum 6 files allowed for import"
                 return
             }
             importToMultitrack(files: droppedFiles)
+        }
+    }
+    
+    private func detectAndProcess(singleFile: URL) {
+        // Try to read the file to determine channel count
+        var inputFile: ExtAudioFileRef?
+        let status = ExtAudioFileOpenURL(singleFile as CFURL, &inputFile)
+        
+        guard status == noErr, let audioFile = inputFile else {
+            statusMessage = "Error: Could not read audio file"
+            return
+        }
+        
+        defer { ExtAudioFileDispose(audioFile) }
+        
+        // Get file format
+        var fileFormat = AudioStreamBasicDescription()
+        var propertySize = UInt32(MemoryLayout<AudioStreamBasicDescription>.size)
+        
+        let formatStatus = ExtAudioFileGetProperty(
+            audioFile,
+            kExtAudioFileProperty_FileDataFormat,
+            &propertySize,
+            &fileFormat
+        )
+        
+        guard formatStatus == noErr else {
+            statusMessage = "Error: Could not read file format"
+            return
+        }
+        
+        let channelCount = fileFormat.mChannelsPerFrame
+        
+        if channelCount > 2 && channelCount <= 12 && channelCount % 2 == 0 {
+            // Multitrack file - export
+            exportMultitrack(file: singleFile)
+        } else if channelCount == 2 {
+            // Stereo file - import (treat as single file import)
+            importToMultitrack(files: [singleFile])
+        } else {
+            statusMessage = "Error: Unsupported audio format (\(channelCount) channels)"
         }
     }
     
@@ -163,6 +185,8 @@ struct ContentView: View {
                     await MainActor.run {
                         self.isProcessing = false
                         self.statusMessage = "Successfully exported tracks!"
+                        // Open destination folder in Finder
+                        NSWorkspace.shared.open(outputDir)
                     }
                 } catch {
                     await MainActor.run {
@@ -198,6 +222,8 @@ struct ContentView: View {
                     await MainActor.run {
                         self.isProcessing = false
                         self.statusMessage = "Successfully created multitrack file!"
+                        // Open containing folder and select the file in Finder
+                        NSWorkspace.shared.activateFileViewerSelecting([outputFile])
                     }
                 } catch {
                     await MainActor.run {
